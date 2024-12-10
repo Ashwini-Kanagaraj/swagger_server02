@@ -23,13 +23,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install flask flask-swagger-ui
 
-    - name: Deploy to EC2
+    - name: Set up SSH Key
       env:
         SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        echo "${SSH_KEY}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh -o StrictHostKeyChecking=no ec2-user@54.161.43.43 << 'EOF'
+        mkdir -p ~/.ssh                         # Ensure the .ssh directory exists
+        echo "${SSH_KEY}" > ~/.ssh/id_rsa       # Save the private key
+        chmod 600 ~/.ssh/id_rsa                 # Set proper permissions for the private key
+        ssh-keyscan -H <EC2_INSTANCE_IP> >> ~/.ssh/known_hosts  # Add EC2 host to known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@<EC2_INSTANCE_IP> << 'EOF'
           cd /path/to/your/app
           git pull origin main
           python3 -m pip install --upgrade pip
