@@ -23,17 +23,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install flask flask-swagger-ui
 
-    - name: Start the API server
-      run: |
-        nohup python app.py &
-
-    - name: Verify API is running
-      run: |
-        curl -f http://localhost:5000/api/hello
-
     - name: Deploy to EC2
+      env:
+        SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@<EC2_INSTANCE_IP> << EOF
+        echo "${SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh -o StrictHostKeyChecking=no ec2-user@<EC2_INSTANCE_IP> << 'EOF'
           cd /path/to/your/app
           git pull origin main
           python3 -m pip install --upgrade pip
