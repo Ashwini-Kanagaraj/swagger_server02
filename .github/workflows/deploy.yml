@@ -35,7 +35,7 @@ jobs:
     - name: Deploy to EC2
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@54.161.43.43 << 'EOF'
-          cd /path/to/your/app
+          cd /home/ec2-user/swagger/testdemo
           git pull origin main
           python3 -m pip install --upgrade pip
           pip install flask flask-swagger-ui
