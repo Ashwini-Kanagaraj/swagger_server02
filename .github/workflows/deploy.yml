@@ -30,3 +30,14 @@ jobs:
     - name: Verify API is running
       run: |
         curl -f http://localhost:5000/api/hello
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@<EC2_INSTANCE_IP> << EOF
+          cd /path/to/your/app
+          git pull origin main
+          python3 -m pip install --upgrade pip
+          pip install flask flask-swagger-ui
+          pkill -f app.py || true
+          nohup python3 app.py &
+        EOF
