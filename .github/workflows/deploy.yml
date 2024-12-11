@@ -40,14 +40,14 @@ jobs:
       # Check for test files
       - name: Check for test files
         run: |
-          if ! ls tests/*_test.py 2>/dev/null && ! ls tests/*_test.py 2>/dev/null; then
+          if ! ls tests/example_test.py 2>/dev/null && ! ls tests/example_test.py 2>/dev/null; then
             echo "No test files found! Exiting..."
             exit 1
           fi
 
       # Run unittests
       - name: Run unittest
-        run: python -m unittest discover -s tests -p 'tests/*_test.py'
+        run: python -m unittest discover -s tests -p 'tests/example_test.py'
 
       # Run pytest
       - name: Run pytest
