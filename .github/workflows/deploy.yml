@@ -1,54 +1,56 @@
-name: Python CI/CD Pipeline
+name: Deploy Flask App to EC2
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository code
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout code
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      # Set up Python environment
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
+    # Setup SSH key for EC2 access
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # Check for requirements.txt
-      - name: Check for requirements.txt
-        run: |
-          if [ ! -f "requirements.txt" ]; then
-            echo "requirements.txt not found! Exiting..."
-            exit 1
+    # Install dependencies
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    # Deploy to EC2
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # Create a directory for the app if it doesn't exist
+          if [ ! -d "flask_app" ]; then
+            mkdir flask_app
           fi
 
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # Navigate to the app directory
+          cd flask_app
 
-      # Check for test files
-      - name: Check for test files
-        run: |
-          if ! ls tests/example_test.py 2>/dev/null && ! ls tests/example_test.py 2>/dev/null; then
-            echo "No test files found! Exiting..."
-            exit 1
-          fi
+          # Pull or copy the updated app.py
+          echo "Updating app.py..."
+          rm -f app.py  # Remove old file if it exists
+          scp -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/app.py ec2-user@${{ secrets.EC2_PUBLIC_IP }}:flask_app/
 
-      # Run unittests
-      - name: Run unittest
-        run: python -m unittest discover -s tests -p 'tests/example_test.py'
+          # Create a virtual environment and install dependencies
+          echo "Setting up virtual environment..."
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r $GITHUB_WORKSPACE/requirements.txt || pip install flask gunicorn
 
-      # Run pytest
-      - name: Run pytest
-        run: pytest --junitxml=pytest-report.xml
+          # Stop any existing Gunicorn process and restart it
+          echo "Starting Gunicorn..."
+          pkill gunicorn || true
+          nohup gunicorn --bind 0.0.0.0:8000 app:app &
+        EOF
