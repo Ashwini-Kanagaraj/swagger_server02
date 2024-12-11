@@ -16,11 +16,11 @@ jobs:
 
     # Setup SSH key for EC2 access
     - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.8.1
+      uses: webfactory/ssh-agent@v0.5.3
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    # Install dependencies
+    # Install Python
     - name: Install Python
       uses: actions/setup-python@v4
       with:
@@ -30,27 +30,20 @@ jobs:
     - name: Deploy to EC2
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # Create a directory for the app if it doesn't exist
-          if [ ! -d "flask_app" ]; then
-            mkdir flask_app
+          # Navigate to the app directory or clone the repo
+          if [ ! -d "app" ]; then
+            git clone https://github.com/yourusername/your-repo.git app
+          else
+            cd app && git pull
           fi
 
-          # Navigate to the app directory
-          cd flask_app
-
-          # Pull or copy the updated app.py
-          echo "Updating app.py..."
-          rm -f app.py  # Remove old file if it exists
-          scp -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/app.py ec2-user@${{ secrets.EC2_PUBLIC_IP }}:flask_app/
-
           # Create a virtual environment and install dependencies
-          echo "Setting up virtual environment..."
+          cd app
           python3 -m venv venv
           source venv/bin/activate
-          pip install -r $GITHUB_WORKSPACE/requirements.txt || pip install flask gunicorn
+          pip install -r requirements.txt
 
-          # Stop any existing Gunicorn process and restart it
-          echo "Starting Gunicorn..."
+          # Run Gunicorn
           pkill gunicorn || true
-          nohup gunicorn --bind 0.0.0.0:8000 app:app &
+          nohup gunicorn --bind 0.0.0.0:5000 app:app &
         EOF
