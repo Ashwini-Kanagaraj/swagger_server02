@@ -1,44 +1,46 @@
-name: Deploy API Server
+name: Python CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flask flask-swagger-ui
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Set up SSH Key
-      env:
-        SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        mkdir -p ~/.ssh                         # Ensure the .ssh directory exists
-        echo "${SSH_KEY}" > ~/.ssh/id_rsa       # Save the private key
-        chmod 600 ~/.ssh/id_rsa                 # Set proper permissions for the private key
-        ssh-keyscan -H 54.161.43.43 >> ~/.ssh/known_hosts || true  # Add EC2 host to known_hosts
+      # Check if test files exist
+      - name: Check for test files
+        run: |
+          if ! ls tests/test.py 2>/dev/null && ! ls tests/test.py 2>/dev/null; then
+            echo "No test files found! Exiting..."
+            exit 1
+          fi
 
-    - name: Deploy to EC2
-      run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@54.161.43.43 << 'EOF'
-          cd /home/ec2-user/swagger/testdemo
-          git pull origin main
-          python3 -m pip install --upgrade pip
-          pip install flask flask-swagger-ui
-          pkill -f app.py || true
-          nohup python3 app.py &
-        EOF
+      # Run unittests
+      - name: Run unittest
+        run: python -m unittest discover -s tests -p '*_test.py'
+
+      # Run pytest
+      - name: Run pytest
+        run: pytest --junitxml=pytest-report.xml
