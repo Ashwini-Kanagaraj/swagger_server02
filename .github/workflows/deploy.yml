@@ -46,7 +46,8 @@ jobs:
     - name: Output Swagger URL
       run: |
         echo "Swagger API deployed successfully!"
-        echo "Access the Swagger UI at http://$EC2_PUBLIC_IP:5001/apidocs"
+        echo "Access the Swagger UI at http://54.161.43.43:5001/apidocs"
+
 
 
 
