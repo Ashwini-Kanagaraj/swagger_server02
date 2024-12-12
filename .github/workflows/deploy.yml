@@ -47,3 +47,4 @@ jobs:
       run: |
         echo "Swagger API deployed successfully!"
         echo "Access the Swagger UI at http://${{ secrets.EC2_PUBLIC_IP }}:5001/apidocs"
+
