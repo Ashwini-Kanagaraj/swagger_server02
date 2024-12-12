@@ -3,7 +3,7 @@ name: Deploy Swagger API to EC2
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to the demo_testing branch
+      - main  # Trigger deployment on push to the main branch
   workflow_dispatch:  # Allow manual workflow triggers
 
 jobs:
@@ -29,9 +29,6 @@ jobs:
           sudo yum install git -y
           git clone https://github.com/Ashwini-Kanagaraj/swagger_server02.git
           cd swagger_server02
-          
-          # # Check out the desired branch
-          # git checkout demo_testing
           
           # Install Python and pip
           sudo yum install python3 -y
